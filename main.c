@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     value* v = create_value(STRING, "Hello, World!", 14);
     set_variable(ctx, "message", v);
 
-    
+
     while (1) {
       char input[256];
       printf(">>> ");
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
       free_tokens(tokens);
     }
-    
+
 
 
     free_context(ctx);

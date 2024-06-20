@@ -4,14 +4,14 @@
 
 #include "tokenizer.h"
 
-int is_operator(char input) {
-  return (input == OP_ADD) ||
-         (input == OP_SUB) ||
-         (input == OP_MUL) ||
-         (input == OP_DIV) ||
-         (input == OP_MOD) ||
-         (input == OP_POW) ||
-         (input == OP_ASSIGN);
+int is_operator_start(char input) {
+  char* operators[] = OPERATORS;
+  for (int i = 0; i < N_OP; i++) {
+    if (input == operators[i][0]) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 int is_alpha(char input) {
@@ -74,9 +74,9 @@ void free_tokens(Token* tokens) {
 
 int tokenize(char* input, int size, Token** tokens) {
 
-  #define advance() input++; i++;
-  #define current input[0]
-  #define resize() *tokens = realloc(*tokens, sizeof(Token) * (token_count + 1))
+#define advance() input++; i++;
+#define current input[0]
+#define resize() *tokens = realloc(*tokens, sizeof(Token) * (token_count + 1))
 
   if (input == NULL) {
     return 0;
@@ -112,20 +112,38 @@ int tokenize(char* input, int size, Token** tokens) {
       input += size;
       resize();
       (*tokens)[token_count++] = result;
-    } else if (is_operator(current)) {
-      char* value = malloc(2);
-      value[0] = current;
-      value[1] = '\0';
-      Token t = create_token(TOKEN_TYPE_OPERATOR, value);
+    } else if (is_operator_start(current)) {
+      char* operators[] = OPERATORS;
+      int max_length = 0;
+      char* max_operator = NULL;
+      for (int j = 0; j < N_OP; j++) {
+        int length = strlen(operators[j]);
+        if (strncmp(input, operators[j], length) == 0 && length > max_length) {
+          max_length = length;
+          if (max_operator != NULL) {
+            free(max_operator); // Free the previously allocated memory
+          }
+          max_operator = malloc(length + 1);
+          strcpy(max_operator, operators[j]);
+        }
+      }
+      if (max_length == 0) {
+        fprintf(stderr, "Unexpected character: '%c'\n", current);
+        free(max_operator); // Free the allocated memory
+        exit(1);
+      }
+      Token result = create_token(TOKEN_TYPE_OPERATOR, max_operator);
+      i += max_length;
+      input += max_length;
       resize();
-      (*tokens)[token_count++] = t;
-      advance();
+      (*tokens)[token_count++] = result;
+
     } else {
       fprintf(stderr, "Unexpected character: '%c'\n", current);
       exit(1);
     }
   }
-  
+
   Token eof = create_token(TOKEN_TYPE_EOF, NULL);
   resize();
   (*tokens)[token_count++] = eof;
